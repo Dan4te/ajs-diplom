@@ -1,4 +1,4 @@
-
+[![Build status](https://ci.appveyor.com/api/projects/status/4i08k2rpp2rm07r6?svg=true)](https://ci.appveyor.com/project/Dan4te/ajs-diplom)
 
 # Дипломное задание к курсу «Продвинутый JavaScript». Retro Game
 
