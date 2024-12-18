@@ -182,7 +182,11 @@ export default class GameController {
     });
 
     if (target) {
-      const damage = Math.max(bot.character.attack - target.character.defence, bot.character.attack * 0.1);
+      const damage = Math.max(
+        bot.character.attack - target.character.defence,
+        bot.character.attack * 0.1,
+      );
+
       this.gamePlay.showDamage(target.position, damage).then(() => {
         target.character.health -= damage;
         if (target.character.health <= 0) {

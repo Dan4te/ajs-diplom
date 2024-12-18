@@ -1,19 +1,22 @@
 import Character from '../Character.js';
-import Daemon from '../Characters/Daemon.js';
 import Bowman from '../Characters/Bowman.js';
+import Daemon from '../Characters/Daemon.js';
 import Magician from '../Characters/Magician.js';
+import Swordsman from '../Characters/Swordsman.js';
+import Undead from '../Characters/Undead.js';
+import Vampire from '../Characters/Vampire.js';
 
-test('Создание объекта Character', () => {
-  expect(() => new Character()).toThrow('Нельзя создать объект класса Character');
+test('При попытке создать новый объект класса Character выбрасывается ошибка', () => {
+  expect(() => new Character(1)).toThrowError(new Error('Такого персонажа создать нельзя'));
 });
 
-test('Создание персонажей должно быть без ошибок', () => {
-  expect(() => new Bowman()).not.toThrow();
-});
-
-test('Создание персонажей должно быть без ошибок', () => {
-  expect(() => new Magician()).not.toThrow();
-});
-test('Создание персонажей должно быть без ошибок', () => {
-  expect(() => new Daemon()).not.toThrow();
+test.each([
+  [new Bowman(1)],
+  [new Daemon(1)],
+  [new Magician(1)],
+  [new Swordsman(1)],
+  [new Undead(1)],
+  [new Vampire(1)],
+])(('Не должно быть выброса ошибки'), (char) => {
+    expect(() => char).not.toThrow();
 });
