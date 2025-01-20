@@ -27,10 +27,8 @@ export default class GameController {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
     this.gamePlay.drawUi(themes[this.gameState.level]);
-
     this.userTeam.addAll(generateTeam([Bowman, Swordsman], 1, 2));
     this.botTeam.addAll(generateTeam(this.botCharacters, 1, 2));
-
     this.addsTheTeamToPosition(this.userTeam, this.getUserStartPositions());
     this.addsTheTeamToPosition(this.botTeam, this.getBotStartPositions());
     this.gamePlay.redrawPositions(this.gameState.allPositions);
@@ -40,38 +38,53 @@ export default class GameController {
     this.gamePlay.addNewGameListener(this.onNewGameClick.bind(this));
     this.gamePlay.addSaveGameListener(this.onSaveGameClick.bind(this));
     this.gamePlay.addLoadGameListener(this.onLoadGameClick.bind(this));
+    GamePlay.showMessage(`Уровень ${this.gameState.level}`);
   }
+
+  /**
+   * Функция формирует командный состав, исходя из условий каждого уровня
+   */
 
   onCellClick(index) {
     // TODO: react to click
+
     if (this.gameState.level === 5 || this.userTeam.members.size === 0) {
       return;
     }
-    const isSelected = !!this.gameState.selected !== null;
-    const char = this.getChar(index);
-    const isBot = char && this.isBotChar(index);
 
-    if (isSelected && isBot) {
+    // Реализация атаки
+    if (this.gameState.selected !== null && this.getChar(index) && this.isBotChar(index)) {
       if (this.isAttack(index)) {
-        this.attack(index, isSelected);
+        this.getAttack(index, this.gameState.selected);
       }
     }
 
-    if (isSelected && this.isMoving(index) && !char) {
+    // перемещение персонажа игрока
+    if (this.gameState.selected !== null && this.isMoving(index) && !this.getChar(index)) {
       if (this.gameState.isUsersTurn) {
         this.getUsersTurn(index);
       }
     }
-    if (isSelected && !this.isMoving(index) && !this.isAttack(index)) {
+
+    // Если не валидный ход, то показываем сообщение об ошибке
+    if (this.gameState.selected !== null && !this.isMoving(index) && !this.isAttack(index)) {
       if (this.gameState.isUsersTurn && !this.getChar(index)) {
-        GamePlay.showError('Недопустимый ход!');
+        GamePlay.showError('Недопустимый ход');
       }
     }
 
-    if ((isBot && !this.isAttack(index))) { /// (isBot && !this.isAttack(index))
-      GamePlay.showError('Это не ваш персонаж!');
+    // Если ячейка пустая то при клике на неё return
+    if (!this.getChar(index)) {
+      return;
     }
-    if (char && this.isUserChar(index)) {
+
+    // Если клик на бота, то показываем сообщение об ошибке
+    if (this.getChar(index) && this.isBotChar(index) && !this.isAttack(index)) {
+      GamePlay.showError('Это не ваш персонаж');
+    }
+
+    // Если клик на персонажа игрока, то выделяем клетку желтым
+    if (this.getChar(index) && this.isUserChar(index)) {
       this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-green'));
       this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-yellow'));
       this.gamePlay.selectCell(index);
@@ -82,24 +95,29 @@ export default class GameController {
   onCellEnter(index) {
     // TODO: react to mouse enter
 
+    // Если в ячейке персонаж игрока, то при наведении на ячейку курсор = pointer
     if (this.getChar(index) && this.isUserChar(index)) {
       this.gamePlay.setCursor(cursors.pointer);
     }
+    // Если валидный диапазон перемещения, то при наведении выделяем ячейку зелёным
     if (this.gameState.selected !== null && !this.getChar(index) && this.isMoving(index)) {
       this.gamePlay.setCursor(cursors.pointer);
       this.gamePlay.selectCell(index, 'green');
     }
+    // При наведении на персонажа показываем инфо
     if (this.getChar(index)) {
       const char = this.getChar(index).character;
       const message = `\u{1F396}${char.level}\u{2694}${char.attack}\u{1F6E1}${char.defence}\u{2764}${char.health}`;
       this.gamePlay.showCellTooltip(message, index);
     }
+    // Если валидный диапазон атаки, то при наведении выделяем ячейку красным
     if (this.gameState.selected !== null && this.getChar(index) && !this.isUserChar(index)) {
       if (this.isAttack(index)) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(index, 'red');
       }
     }
+    // Если не валидные диапазоны атаки и перемещения и бот, то при наведении курсор = notallowed
     if (this.gameState.selected !== null && !this.isAttack(index) && !this.isMoving(index)) {
       if (!this.isUserChar(index)) {
         this.gamePlay.setCursor(cursors.notallowed);
@@ -115,7 +133,13 @@ export default class GameController {
     this.gamePlay.setCursor(cursors.auto);
   }
 
-  attack(idx) {
+  /**
+   * Функция атаки, наносит урон противнику
+   * @param {number} idx индекс бота
+   * @returns после атаки пересчитывается полоска жизни над
+   *  персонажем (она автоматически пересчитывается в redrawPositions).
+   */
+  getAttack(idx) {
     if (this.gameState.isUsersTurn) {
       const attacker = this.getChar(this.gameState.selected).character;
       const target = this.getChar(idx).character;
@@ -139,6 +163,11 @@ export default class GameController {
     }
   }
 
+  /**
+   * Функция реализует перемещение персонажа юзера в ячейку по которой был клик,
+   *  если диапазон валидный
+   * @param {number} idx индекс ячейки перемещения
+   */
   getUsersTurn(idx) {
     this.getSelectedChar().position = idx;
     this.gamePlay.deselectCell(this.gameState.selected);
@@ -148,20 +177,26 @@ export default class GameController {
     this.getBotsResponse();
   }
 
+  /**
+   * Функция реализует ответное действие бота атаку или перемещение, в зависимости от положения
+   * персонажа игрока
+   * @returns наносит урон персонажу игрока, в случае атаки или рандомно выбирает бота и реализует
+   *перемещение.
+   */
   getBotsResponse() {
     if (this.gameState.isUsersTurn) {
       return;
     }
-
     const botsTeam = this.gameState.allPositions.filter((e) => (
-
       e.character instanceof Vampire
       || e.character instanceof Daemon
       || e.character instanceof Undead
-
     ));
-    const usersTeam = this.gameState.allPositions.filter((e) => this.userTeam.has(e.character));
-
+    const usersTeam = this.gameState.allPositions.filter((e) => (
+      e.character instanceof Bowman
+      || e.character instanceof Swordsman
+      || e.character instanceof Magician
+    ));
     let bot = null;
     let target = null;
 
@@ -171,22 +206,19 @@ export default class GameController {
 
     botsTeam.forEach((elem) => {
       const rangeAttack = this.calcRange(elem.position, elem.character.attackRange);
-      usersTeam.forEach((user) => {
-          if (rangeAttack.includes(user.position)) {
-            bot = elem;
-            target = user;
-
-            this.handleAttack(bot, target);
-          }
-        });
+      usersTeam.forEach((val) => {
+        if (rangeAttack.includes(val.position)) {
+          bot = elem;
+          target = val;
+        }
+      });
     });
 
     if (target) {
       const damage = Math.max(
         bot.character.attack - target.character.defence,
-        bot.character.attack * 0.1,
+         bot.character.attack * 0.1,
       );
-
       this.gamePlay.showDamage(target.position, damage).then(() => {
         target.character.health -= damage;
         if (target.character.health <= 0) {
@@ -219,27 +251,38 @@ export default class GameController {
     }
   }
 
+  /**
+   * Функция проверяет после каждого действия пользователя или бота состояние игры
+   * и в зависимости от условий переводит игру в одно из состояний: "Победа", "Поражение",
+   *  "Переход на следующий уровень".
+   */
   getGameResult() {
     if (this.userTeam.members.size === 0) {
       this.gameState.statistics.push(this.gameState.points);
       GamePlay.showMessage(`Вы проиграли...Количество набранных очков: ${this.gameState.points}`);
     }
+
     if (this.botTeam.members.size === 0 && this.gameState.level === 4) {
       this.scoringPoints();
       this.gameState.statistics.push(this.gameState.points);
-      GamePlay.showMessage(`Поздравляем! Вы победили! Количество набранных очков: ${this.gameState.points}`);
+      GamePlay.showMessage(`Поздравляем! Вы победили! Количество набранных очков: ${this.gameState.points},
+      Максимальное количество очков: ${Math.max(...this.gameState.statistics)}`);
       this.gameState.level += 1;
     }
+
     if (this.botTeam.members.size === 0 && this.gameState.level <= 3) {
       this.gameState.isUsersTurn = true;
       this.scoringPoints();
       GamePlay.showMessage(`Вы прошли уровень ${this.gameState.level} Количество набранных очков: ${this.gameState.points}`);
       this.gameState.level += 1;
-      this.gameLevelUp();
+      this.getLevelUp();
     }
   }
 
-  gameLevelUp() {
+  /**
+   * Функция перехода на следующий уровень.
+   */
+  getLevelUp() {
     this.gameState.allPositions = [];
     this.userTeam.members.forEach((char) => char.levelUp());
 
@@ -247,10 +290,12 @@ export default class GameController {
       this.userTeam.addAll(generateTeam(this.userCharacters, 1, 1));
       this.botTeam.addAll(generateTeam(this.botCharacters, 2, this.userTeam.members.size));
     }
+
     if (this.gameState.level === 3) {
       this.userTeam.addAll(generateTeam(this.userCharacters, 2, 2));
       this.botTeam.addAll(generateTeam(this.botCharacters, 3, this.userTeam.members.size));
     }
+
     if (this.gameState.level === 4) {
       this.userTeam.addAll(generateTeam(this.userCharacters, 3, 2));
       this.botTeam.addAll(generateTeam(this.botCharacters, 4, this.userTeam.members.size));
@@ -263,15 +308,27 @@ export default class GameController {
     this.gamePlay.redrawPositions(this.gameState.allPositions);
   }
 
+  /**
+   * Функция начисления очков пользователю по завершению уровня
+   */
   scoringPoints() {
     this.gameState.points += this.userTeam.toArray().reduce((a, b) => a + b.health, 0);
   }
 
+  /**
+   * Удаляет персонажа из игрового поля
+   * @param {number} idx индекс персонажа
+   */
   getDeletion(idx) {
     const state = this.gameState.allPositions;
     state.splice(state.indexOf(this.getChar(idx)), 1);
   }
 
+  /**
+   * Проверяет валидность диапазона перемещения
+   * @param {number} idx индекс персонажа
+   * @returns boolean
+   */
   isMoving(idx) {
     if (this.getSelectedChar()) {
       const moving = this.getSelectedChar().character.distance;
@@ -281,6 +338,11 @@ export default class GameController {
     return false;
   }
 
+  /**
+   * Проверяет валидность диапазона атаки
+   * @param {number} idx индекс персонажа
+   * @returns boolean
+   */
   isAttack(idx) {
     if (this.getSelectedChar()) {
       const stroke = this.getSelectedChar().character.attackRange;
@@ -290,10 +352,16 @@ export default class GameController {
     return false;
   }
 
+  /**
+   * @returns Возвращает выбранного героя
+   */
   getSelectedChar() {
     return this.gameState.allPositions.find((elem) => elem.position === this.gameState.selected);
   }
 
+  /**
+   * @returns {Array} Возвращает массив возможных позиций игрока при старте игры
+   */
   getUserStartPositions() {
     const size = this.gamePlay.boardSize;
     this.userPosition = [];
@@ -303,6 +371,9 @@ export default class GameController {
     return this.userPosition;
   }
 
+  /**
+   * @returns Возвращает массив возможных позиций бота при старте игры
+   */
   getBotStartPositions() {
     const size = this.gamePlay.boardSize;
     const botPosition = [];
@@ -312,11 +383,21 @@ export default class GameController {
     return botPosition;
   }
 
+  /**
+ * Возвращает рандомную позицию
+ * @param {Array} positions массив возможных позиций при старте игры
+ * @returns рандомное число
+ */
   getRandom(positions) {
     this.positions = positions;
     return this.positions[Math.floor(Math.random() * this.positions.length)];
   }
 
+  /**
+   * Добавляет команду в gameState.allPositions
+   * @param {Object} team команда (игрока или бота)
+   * @param {Array} positions массив возможных позиций при старте игры
+   */
   addsTheTeamToPosition(team, positions) {
     const copyPositions = [...positions];
     for (const item of team) {
@@ -326,6 +407,11 @@ export default class GameController {
     }
   }
 
+  /**
+   * Проверяет по индексу игрока ли персонаж
+   * @param {number} idx индекс игрока
+   * @returns boolean
+   */
   isUserChar(idx) {
     if (this.getChar(idx)) {
       const char = this.getChar(idx).character;
@@ -334,6 +420,11 @@ export default class GameController {
     return false;
   }
 
+  /**
+   * Проверяет по индексу бота ли персонаж
+   * @param {number} idx индекс бота
+   * @returns boolean
+   */
   isBotChar(idx) {
     if (this.getChar(idx)) {
       const bot = this.getChar(idx).character;
@@ -342,10 +433,20 @@ export default class GameController {
     return false;
   }
 
+  /**
+   * @param {number} idx индекс персонажа
+   * @returns Возвращает персонажа по индексу из gameState.allPositions
+   */
   getChar(idx) {
     return this.gameState.allPositions.find((elem) => elem.position === idx);
   }
 
+  /**
+   * Расчитывает диапазон перемещения или атаки
+   * @param {number} idx индекс персонажа
+   * @param {number} char значение свойства персонажа
+   * @returns возвращает массив валидных индексов
+   */
   calcRange(idx, char) {
     const brdSize = this.gamePlay.boardSize;
     const range = [];
@@ -385,6 +486,7 @@ export default class GameController {
         break;
       }
     }
+
     return range.filter((elem) => elem >= 0 && elem <= (brdSize ** 2 - 1));
   }
 
@@ -414,45 +516,45 @@ export default class GameController {
   }
 
   onLoadGameClick() {
-    GamePlay.showMessage('Игра загружена');
-    const loadedState = this.stateService.loadedState();
-    if (!loadedState) {
+    GamePlay.showMessage('Игра загружается');
+    const load = this.stateService.load();
+    if (!load) {
       GamePlay.showError('Ошибка загрузки');
     }
-    this.gameState.isUsersTurn = loadedState.isUsersTurn;
-    this.gameState.level = loadedState.level;
+    this.gameState.isUsersTurn = load.isUsersTurn;
+    this.gameState.level = load.level;
     this.gameState.allPositions = [];
-    this.gameState.points = loadedState.points;
-    this.gameState.statistics = loadedState.statistics;
-    this.gameState.selected = loadedState.selected;
+    this.gameState.points = load.points;
+    this.gameState.statistics = load.statistics;
+    this.gameState.selected = load.selected;
     this.userTeam = new Team();
     this.botTeam = new Team();
-    loadedState.allPositions.forEach((elem) => {
+    load.allPositions.forEach((elem) => {
       let char;
       switch (elem.character.type) {
         case 'swordsman':
           char = new Swordsman(elem.character.level);
-          this.userTeam.add([char]);
+          this.userTeam.addAll([char]);
           break;
         case 'bowman':
           char = new Bowman(elem.character.level);
-          this.userTeam.add([char]);
+          this.userTeam.addAll([char]);
           break;
         case 'magician':
           char = new Magician(elem.character.level);
-          this.userTeam.add([char]);
+          this.userTeam.addAll([char]);
           break;
         case 'undead':
           char = new Undead(elem.character.level);
-          this.botTeam.add([char]);
+          this.botTeam.addAll([char]);
           break;
         case 'vampire':
           char = new Vampire(elem.character.level);
-          this.botTeam.add([char]);
+          this.botTeam.addAll([char]);
           break;
         case 'daemon':
           char = new Daemon(elem.character.level);
-          this.botTeam.add([char]);
+          this.botTeam.addAll([char]);
           break;
         // no default
       }

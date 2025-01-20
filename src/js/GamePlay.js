@@ -82,7 +82,10 @@ export default class GamePlay {
       healthEl.classList.add('health-level');
 
       const healthIndicatorEl = document.createElement('div');
-      healthIndicatorEl.classList.add('health-level-indicator', `health-level-indicator-${calcHealthLevel(position.character.health)}`);
+      healthIndicatorEl.classList.add(
+        'health-level-indicator',
+        `health-level-indicator-${calcHealthLevel(position.character.health)}`,
+      );
       healthIndicatorEl.style.width = `${position.character.health}%`;
       healthEl.appendChild(healthIndicatorEl);
 
@@ -192,8 +195,7 @@ export default class GamePlay {
 
   deselectCell(index) {
     const cell = this.cells[index];
-    cell.classList.remove(...Array.from(cell.classList)
-      .filter((o) => o.startsWith('selected')));
+    cell.classList.remove(...Array.from(cell.classList).filter((o) => o.startsWith('selected')));
   }
 
   showCellTooltip(message, index) {

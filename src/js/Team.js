@@ -1,38 +1,30 @@
 export default class Team {
-  #members;
-
   constructor() {
-    this.#members = new Set();
-  }
-
-  has(character) {
-    return this.#members.has(character);
-  }
-
-  get members() {
-    return this.#members;
+    this.members = new Set();
   }
 
   add(character) {
-    if (this.#members.has(character)) {
-      throw new Error('Ошибка!Такой персонаж уже eсть в команде!');
+    if (this.members.has(character)) {
+      throw new Error('Такой персонаж уже eсть в команде');
     }
-    this.#members.add(character);
+    this.members.add(character);
   }
 
   addAll(characters) {
-    this.#members = new Set([...this.#members, ...characters]);
+    this.members = new Set([...this.members, ...characters]);
   }
 
   delete(elem) {
-    this.#members.delete(elem);
+    this.members.delete(elem);
   }
 
   toArray() {
-    return [...this.#members];
+    return [...this.members];
   }
 
-  [Symbol.iterator]() {
-    return this.#members[Symbol.iterator]();
+  * [Symbol.iterator]() {
+    for (const person of this.members) {
+      yield person;
+    }
   }
 }

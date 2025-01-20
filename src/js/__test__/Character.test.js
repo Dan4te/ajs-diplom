@@ -7,7 +7,7 @@ import Undead from '../Characters/Undead.js';
 import Vampire from '../Characters/Vampire.js';
 
 test('При попытке создать новый объект класса Character выбрасывается ошибка', () => {
-  expect(() => new Character(1)).toThrowError(new Error('Такого персонажа создать нельзя'));
+  expect(() => new Character(1)).toThrowError(new Error('It is forbidden to create objects of the Character class'));
 });
 
 test.each([
@@ -19,4 +19,4 @@ test.each([
   [new Vampire(1)],
 ])(('Не должно быть выброса ошибки'), (char) => {
     expect(() => char).not.toThrow();
-});
+  });
