@@ -16,6 +16,8 @@
     "@babel/cli": "^7.26.4",
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
+    "@eslint/config-array": "^0.19.1",
+    "@eslint/object-schema": "^2.1.5",
     "babel-jest": "^29.7.0",
     "babel-loader": "^9.2.1",
     "css-loader": "^7.1.2",
