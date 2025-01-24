@@ -39,6 +39,7 @@
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "ajv": "^8.17.1",
     "core-js": "^3.39.0",
-    "globals": "^15.13.0"
+    "globals": "^15.13.0",
+    "yarn": "^1.22.22"
   }
 }
